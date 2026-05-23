@@ -1,5 +1,6 @@
 package com.example.services;
 
+import com.example.data.entity.RoleType;
 import com.example.data.entity.User;
 import com.example.data.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ public class UserService {
     }
 
     public List<User> listAllClients() {
-        return repository.findAll();
+        return repository.findByRole(RoleType.CLIENT);
     }
 
     public Optional<User> getClient(Long id) {
