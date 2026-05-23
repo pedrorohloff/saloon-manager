@@ -1,11 +1,9 @@
 package com.example.data.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
+@Table(name = "application_user")
 public class User {
 
     @Id
@@ -13,14 +11,20 @@ public class User {
     private Long id;
     private String name;
     private String telephone;
+    private String username;
+    private String password;
+
+    @Enumerated(EnumType.STRING)
     private RoleType role;
 
     // JPA constructor
     public User() {}
 
-    public User(String name, String telephone, RoleType role) {
+    public User(String name, String telephone, String username, String password,RoleType role) {
         this.name = name;
         this.telephone = telephone;
+        this.username = username;
+        this.password = password;
         this.role = role;
     }
 
@@ -43,6 +47,22 @@ public class User {
 
     public void setTelephone(String telephone) {
         this.telephone = telephone;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public RoleType getRole() {
