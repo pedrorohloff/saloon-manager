@@ -1,6 +1,7 @@
 package com.example.services;
 
 import com.example.data.entity.Appointment;
+import com.example.data.entity.User;
 import com.example.data.repository.AppointmentRepository;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,10 @@ public class AppointmentService {
 
     public AppointmentService(AppointmentRepository appointmentRepository) {
         this.appointmentRepository = appointmentRepository;
+    }
+
+    public List<Appointment> findAppointmentsByClient(User client) {
+        return appointmentRepository.findByClient(client);
     }
 
     public List<Appointment> listAllAppointments() {

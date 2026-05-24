@@ -8,7 +8,9 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -29,6 +31,9 @@ public class ClientDashboardView extends VerticalLayout {
         setSpacing(true);
         setAlignItems(Alignment.CENTER);
 
+        String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        User loggerInClient = userRepository.findByUsername(currentUser);
+
         H2 title = new H2("Agendar novo horario");
 
         // input fields
@@ -44,6 +49,15 @@ public class ClientDashboardView extends VerticalLayout {
             timePicker.setEnabled(event.getValue() != null);
         });
 
+        H3 gridTitle = new H3("Lista de agendamentos");
+        Grid<Appointment> grid = new Grid<>(Appointment.class, false);
+        grid.addColumn(Appointment::getDescription).setHeader("Descricao").setAutoWidth(true);
+        grid.addColumn(Appointment::getAppointmentDate).setHeader("Data").setAutoWidth(true);
+        grid.addColumn(Appointment::getAppointmentTime).setHeader("Hora").setAutoWidth(true);
+
+        grid.setItems(appointmentService.findAppointmentsByClient(loggerInClient));
+        grid.setWidth("80%");
+
         Button appointmentButton = new Button("Confirmar Agendamento");
         appointmentButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
@@ -52,9 +66,6 @@ public class ClientDashboardView extends VerticalLayout {
                 Notification.show("Campo(s) obrigatorio(s) nao preenchido(s).");
                 return;
             }
-
-            String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
-            User loggerInClient = userRepository.findByUsername(currentUser);
 
             LocalTime selectedTime = LocalTime.parse(timePicker.getValue());
 
@@ -75,7 +86,7 @@ public class ClientDashboardView extends VerticalLayout {
         });
 
         HorizontalLayout dateTimeLine = new HorizontalLayout(datePicker, timePicker);
-        add(title, descriptionField, dateTimeLine, appointmentButton);
+        add(title, descriptionField, dateTimeLine, appointmentButton, gridTitle, grid);
     }
 
 }
