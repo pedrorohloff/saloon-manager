@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Entity
@@ -18,6 +21,14 @@ public class Appointment {
     @ManyToOne
     @JoinColumn(name = "client_id")
     private User client;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "appointment_services",
+            joinColumns = @JoinColumn(name = "appointment_id"),
+            inverseJoinColumns = @JoinColumn(name = "service_id")
+    )
+    private List<ServiceEntity> services = new ArrayList<>();
 
     private LocalTime appointmentTime;
     private LocalDate appointmentDate;
@@ -37,11 +48,23 @@ public class Appointment {
         isActive = true;
     }
 
-    public Appointment(String description, LocalDate appointmentDate, LocalTime appointmentTime) {
-        this.description = description;
+    public Appointment(LocalDate appointmentDate, LocalTime appointmentTime) {
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
         this.isActive = true;
+    }
+
+    // business rules
+    public Double getTotalPrice() {
+        return services.stream()
+                .mapToDouble(ServiceEntity::getPrice)
+                .sum();
+    }
+
+    public String getFormattedServiceEntity() {
+        return services.stream()
+                .map(ServiceEntity::getName)
+                .collect(Collectors.joining(", "));
     }
 
     // getters and setters
@@ -79,5 +102,13 @@ public class Appointment {
 
     public void setActive(boolean active) {
         isActive = active;
+    }
+
+    public List<ServiceEntity> getServices() {
+        return services;
+    }
+
+    public void setServices(List<ServiceEntity> services) {
+        this.services = services;
     }
 }

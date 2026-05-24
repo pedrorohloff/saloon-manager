@@ -1,4 +1,4 @@
-package com.example.Infrastructure.security;
+package com.example.infrastructure.security;
 
 import com.example.views.LoginView;
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;

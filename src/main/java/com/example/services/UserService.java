@@ -25,6 +25,10 @@ public class UserService {
         return repository.findById(id);
     }
 
+    public User findByUsername(String username) {
+        return repository.findByUsername(username);
+    }
+
     public void saveClient(User user) {
         if (user == null) {
             System.err.println("Client is null.");

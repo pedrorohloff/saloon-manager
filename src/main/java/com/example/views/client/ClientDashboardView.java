@@ -1,12 +1,15 @@
 package com.example.views.client;
 
 import com.example.data.entity.Appointment;
+import com.example.data.entity.ServiceEntity;
 import com.example.data.entity.User;
 import com.example.data.repository.UserRepository;
 import com.example.services.AppointmentService;
+import com.example.services.ServiceEntityService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
@@ -26,7 +29,9 @@ import java.util.List;
 @Route("agendamento")
 @RolesAllowed({"CLIENT", "ADMIN"})
 public class ClientDashboardView extends VerticalLayout {
-    public ClientDashboardView(AppointmentService appointmentService, UserRepository userRepository) {
+    public ClientDashboardView(AppointmentService appointmentService,
+                               UserRepository userRepository,
+                               ServiceEntityService serviceEntityService) {
         setPadding(true);
         setSpacing(true);
         setAlignItems(Alignment.CENTER);
@@ -37,7 +42,11 @@ public class ClientDashboardView extends VerticalLayout {
         H2 title = new H2("Agendar novo horario");
 
         // input fields
-        TextField descriptionField = new TextField("Descricao (Ex: corte de cabelo)");
+        MultiSelectComboBox<ServiceEntity> servicesSelect = new MultiSelectComboBox<>("Selecione um ou mais serviços");
+        servicesSelect.setItems(serviceEntityService.listAllSerivces());
+        servicesSelect.setItemLabelGenerator(ServiceEntity::getName);
+        servicesSelect.setWidth("350px");
+
         DatePicker datePicker = new DatePicker("Data");
         datePicker.setMin(LocalDate.now());
 
@@ -51,9 +60,13 @@ public class ClientDashboardView extends VerticalLayout {
 
         H3 gridTitle = new H3("Lista de agendamentos");
         Grid<Appointment> grid = new Grid<>(Appointment.class, false);
-        grid.addColumn(Appointment::getDescription).setHeader("Descricao").setAutoWidth(true);
+
+        grid.addColumn(Appointment::getFormattedServiceEntity).setHeader("Serviços").setAutoWidth(true);
         grid.addColumn(Appointment::getAppointmentDate).setHeader("Data").setAutoWidth(true);
         grid.addColumn(Appointment::getAppointmentTime).setHeader("Hora").setAutoWidth(true);
+        grid.addColumn(appointment -> "R$ " + String.format("%.2f", appointment.getTotalPrice()))
+                .setHeader("Valor Total")
+                .setAutoWidth(true);
 
         grid.setItems(appointmentService.findAppointmentsByClient(loggerInClient));
         grid.setWidth("80%");
@@ -62,31 +75,36 @@ public class ClientDashboardView extends VerticalLayout {
         appointmentButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         appointmentButton.addClickListener(event -> {
-            if (datePicker.isEmpty() || timePicker.isEmpty() || descriptionField.isEmpty()) {
+            if (datePicker.isEmpty() || timePicker.isEmpty() || servicesSelect.isEmpty()) {
                 Notification.show("Campo(s) obrigatorio(s) nao preenchido(s).");
                 return;
             }
 
-            LocalTime selectedTime = LocalTime.parse(timePicker.getValue());
 
-            Appointment appointment = new Appointment(
-                    descriptionField.getValue(),
-                    datePicker.getValue(),
-                    selectedTime
-            );
-            appointment.setClient(loggerInClient);
+            try {
+                LocalTime selectedTime = LocalTime.parse(timePicker.getValue());
 
-            appointmentService.saveAppointment(appointment);
+                appointmentService.createAppointment(
+                        loggerInClient,
+                        datePicker.getValue(),
+                        selectedTime,
+                        servicesSelect.getValue()
+                );
 
-            Notification.show("Agendamento realizado com sucesso");
+                Notification.show("Agendamento realizado com sucesso");
 
-            descriptionField.clear();
-            datePicker.clear();
-            timePicker.clear();
+                servicesSelect.clear();
+                datePicker.clear();
+                timePicker.clear();
+
+                grid.setItems(appointmentService.findAppointmentsByClient(loggerInClient));
+            } catch (Exception e) {
+                Notification.show("Erro ao agendar: " + e.getMessage());
+            }
         });
 
         HorizontalLayout dateTimeLine = new HorizontalLayout(datePicker, timePicker);
-        add(title, descriptionField, dateTimeLine, appointmentButton, gridTitle, grid);
+        add(title, servicesSelect, dateTimeLine, appointmentButton, gridTitle, grid);
     }
 
 }
