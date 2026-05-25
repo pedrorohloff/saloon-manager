@@ -6,6 +6,7 @@ import com.example.data.entity.User;
 import com.example.services.AppointmentService;
 import com.example.services.ServiceEntityService;
 import com.example.services.UserService;
+import com.example.services.GroupingRecommendation;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.html.UnorderedList;
@@ -22,6 +23,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.boot.autoconfigure.web.format.DateTimeFormatters;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -54,6 +56,9 @@ public class ClientDashboardView extends VerticalLayout {
     private final Button filterButton;
     private final Button clearFilterButton;
 
+    // recommendations
+    private final VerticalLayout recommendationsContainer = new VerticalLayout();
+
     // others
     private final Grid<Appointment> grid;
     private Appointment editingAppointment = null;
@@ -75,6 +80,11 @@ public class ClientDashboardView extends VerticalLayout {
         this.loggedInClient = userService.findByUsername(currentUser);
 
         H2 title = new H2("Agendar novo horario");
+
+        recommendationsContainer.setWidth("80%");
+        recommendationsContainer.setPadding(false);
+        recommendationsContainer.setSpacing(true);
+
 
         // input fields
         servicesSelect = new MultiSelectComboBox<>("Selecione um ou mais serviços");
@@ -147,7 +157,8 @@ public class ClientDashboardView extends VerticalLayout {
         HorizontalLayout dateTimeLine = new HorizontalLayout(datePicker, timePicker);
         HorizontalLayout actionsLine = new HorizontalLayout(appointmentButton, cancelButton);
 
-        add(title, servicesSelect, dateTimeLine, actionsLine, new H3("Filtrar Historico"), filterLayout, gridTitle, grid);
+        add(title, servicesSelect, dateTimeLine, actionsLine, recommendationsContainer, new H3("Filtrar Historico"), filterLayout, gridTitle, grid);
+        refreshRecommendation();
     }
 
     // auxiliary methods
@@ -272,6 +283,71 @@ public class ClientDashboardView extends VerticalLayout {
         appointmentButton.setText("Confirmar Agendamento");
         cancelButton.setVisible(false);
         grid.asSingleSelect().clear();
+    }
+
+    private void refreshRecommendation() {
+        recommendationsContainer.removeAll();
+        List<GroupingRecommendation> recommendations = appointmentService.getGroupingRecommendations(loggedInClient);
+
+        if (recommendations.isEmpty()) {
+            recommendationsContainer.setVisible(false);
+            return;
+        }
+
+        recommendationsContainer.setVisible(true);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+        for (GroupingRecommendation rec : recommendations) {
+            HorizontalLayout card = new HorizontalLayout();
+            card.setWidthFull();
+            card.getStyle().set("background-color", "var(--lumo-primary-color-10pct)");
+            card.getStyle().set("border", "1px solid var(--lumo-primary-color-50pct)");
+            card.getStyle().set("border-radius", "var(--lumo-size-s)");
+            card.getStyle().set("padding", "var(--lumo-space-m)");
+            card.getStyle().set("align-items", "center)");
+            card.setJustifyContentMode(JustifyContentMode.BETWEEN);
+
+            VerticalLayout textLayout = new VerticalLayout();
+            textLayout.setPadding(false);
+            textLayout.setSpacing(false);
+
+            Span titleSpan = new Span("Recomendacao de agrupamento de agendamentos.");
+            titleSpan.getStyle().set("font-weight", "bold");
+            titleSpan.getStyle().set("color", "var(--lumu-primary-text-color)");
+
+            Span descSpan = new Span("Identificamos que voce possui agendamentos na semana de " +
+                    rec.weekStart().format(formatter) + ". Sugerimos reagenda-las para o dia do seu primeiro agendamento (" +
+                    rec.targetDate().format(formatter) + ") para sua conveniencia");
+            descSpan.getStyle().set("font-size", "var(--lumo-font-size-s)");
+
+            UnorderedList list = new UnorderedList();
+            list.getStyle().set("margin-top", "var(--lumo-space-xs)");
+            list.getStyle().set("font-size", "var(--lumo-font-size-xs)");
+
+            for (Appointment appointment : rec.appointmentsToReschedule()) {
+                list.add(new ListItem(appointment.getFormattedServiceEntity() + " - atual: " +
+                        appointment.getAppointmentDate().format(formatter) + " as " +
+                        appointment.getAppointmentTime()));
+            }
+
+            textLayout.add(titleSpan, descSpan, list);
+
+            Button groupButton = new Button("Reagendar para " + rec.targetDate().format(formatter));
+            groupButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
+            groupButton.addClickListener(event -> {
+                try {
+                    appointmentService.groupAppointments(rec.appointmentsToReschedule(), rec.targetDate());
+                    Notification.show("Agendamentos reagendados com sucesso!");
+                    refreshRecommendation();
+                    grid.setItems(appointmentService.findAppointmentsByClient(loggedInClient));
+                } catch (Exception e) {
+                    Notification.show("Erro ao reagendar: " + e.getMessage());
+                }
+            });
+
+            card.add(textLayout, groupButton);
+            recommendationsContainer.add(card);
+        }
     }
 
 }

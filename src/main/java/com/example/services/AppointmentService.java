@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.time.temporal.TemporalAdjusters;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AppointmentService {
@@ -88,6 +88,68 @@ public class AppointmentService {
         appointment.setServices(new ArrayList<>(services));
 
         appointmentRepository.save(appointment);
+    }
+
+    public List<GroupingRecommendation> getGroupingRecommendations(User client) {
+        if (client == null) {
+            return List.of();
+        }
+
+        // search all future appointments for a client
+        List<Appointment> upcomingAppointments = appointmentRepository.findByClient(client).stream()
+                .filter(Appointment::isActive)
+                .filter(a -> !a.getAppointmentDate().isBefore(LocalDate.now()))
+                .sorted(Comparator.comparing(Appointment::getAppointmentDate).thenComparing(Appointment::getAppointmentTime))
+                .toList();
+
+        // group the appointments by the start of the week
+        Map<LocalDate, List<Appointment>> appointmentsByWeek = upcomingAppointments.stream()
+                .collect(Collectors.groupingBy(a -> a.getAppointmentDate()
+                        .with(TemporalAdjusters.previousOrSame((DayOfWeek.MONDAY)))));
+
+        List<GroupingRecommendation> recommendations = new ArrayList<>();
+
+        for (Map.Entry<LocalDate, List<Appointment>> entry :appointmentsByWeek.entrySet()) {
+            LocalDate weekStart = entry.getKey();
+            List<Appointment> weekAppointments = entry.getValue();
+
+            if (weekAppointments.size() > 1) {
+                Appointment firstAppointment = weekAppointments.get(0);
+                LocalDate firstDate = firstAppointment.getAppointmentDate();
+
+                // identify other appointments in the same week with different dates and are allowed to be changed
+                List<Appointment> toReschedule = weekAppointments.stream()
+                        .skip(1)
+                        .filter(a -> !a.getAppointmentDate().equals(firstDate))
+                        .filter(this::isModifiable)
+                        .toList();
+
+                if (!toReschedule.isEmpty()) {
+                    recommendations.add(new GroupingRecommendation(
+                            weekStart,
+                            firstAppointment,
+                            toReschedule,
+                            firstDate
+                    ));
+                }
+            }
+        }
+        return recommendations;
+    }
+
+    @Transactional
+    public void groupAppointments(List<Appointment> appointments, LocalDate targetDate) {
+        if (appointments.isEmpty() || appointments == null || targetDate == null) {
+            throw new IllegalArgumentException("Parametros invalidos para o agrupamento");
+        }
+
+        for (Appointment appointment : appointments) {
+            if (!isModifiable(appointment)) {
+                throw new IllegalStateException("O agendamento do dia " + appointment.getAppointmentDate() + "nao pode ser alterado online");
+            }
+            appointment.setAppointmentDate(targetDate);
+            appointmentRepository.save(appointment);
+        }
     }
 
     // auxiliary methods
