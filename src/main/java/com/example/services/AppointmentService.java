@@ -1,6 +1,7 @@
 package com.example.services;
 
 import com.example.data.entity.Appointment;
+import com.example.data.entity.AppointmentStatus;
 import com.example.data.entity.ServiceEntity;
 import com.example.data.entity.User;
 import com.example.data.repository.AppointmentRepository;
@@ -152,21 +153,47 @@ public class AppointmentService {
         }
     }
 
+    @Transactional
     public void updateAppointmentByAdmin(
             Appointment appointment,
             LocalDate date, LocalTime time,
-            Collection<ServiceEntity> services
+            Collection<ServiceEntity> services,
+            AppointmentStatus status
     ) {
         if (appointment == null) {
             throw new IllegalArgumentException("Agendamento invalido");
         }
-        if (date == null || time == null || services.isEmpty()) {
+        if (date == null || time == null || services.isEmpty() || status == null) {
             throw new IllegalArgumentException("Todos os campos obrigatorios devem ser preenchidos.");
         }
 
         appointment.setAppointmentDate(date);
         appointment.setAppointmentTime(time);
         appointment.setServices(new ArrayList<>(services));
+        appointment.setStatus(status);
+
+        if (status == AppointmentStatus.CANCELLED) {
+            appointment.setActive(false);
+        } else {
+            appointment.setActive(true);
+        }
+
+        appointmentRepository.save(appointment);
+    }
+
+    @Transactional
+    public void updateAppointmentStatus(Appointment appointment, AppointmentStatus status) {
+        if (appointment == null || status == null) {
+            throw new IllegalArgumentException("Agendament ou status invalidos");
+        }
+
+        appointment.setStatus(status);
+
+        if (status == AppointmentStatus.CANCELLED) {
+            appointment.setActive(false);
+        } else {
+            appointment.setActive(true);
+        }
 
         appointmentRepository.save(appointment);
     }

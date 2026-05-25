@@ -121,6 +121,8 @@ public class ClientDashboardView extends VerticalLayout {
                 .setHeader("Valor Total")
                 .setAutoWidth(true);
 
+        grid.addColumn(Appointment::getStatusDescription).setHeader("Status").setAutoWidth(true);
+
         grid.addComponentColumn(appointment -> {
             HorizontalLayout actions = new HorizontalLayout();
 

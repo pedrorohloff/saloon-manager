@@ -29,11 +29,12 @@ public class Appointment {
             inverseJoinColumns = @JoinColumn(name = "service_id")
     )
     private List<ServiceEntity> services = new ArrayList<>();
-
     private LocalTime appointmentTime;
     private LocalDate appointmentDate;
-
     private boolean isActive;
+
+    @Enumerated
+    private AppointmentStatus status = AppointmentStatus.PENDING;
 
     public User getClient() {
         return client;
@@ -46,12 +47,14 @@ public class Appointment {
     // JPA constructor
     public Appointment() {
         isActive = true;
+        status = AppointmentStatus.PENDING;
     }
 
     public Appointment(LocalDate appointmentDate, LocalTime appointmentTime) {
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
         this.isActive = true;
+        this.status = AppointmentStatus.PENDING;
     }
 
     // business rules
@@ -65,6 +68,17 @@ public class Appointment {
         return services.stream()
                 .map(ServiceEntity::getName)
                 .collect(Collectors.joining(", "));
+    }
+
+    public String getStatusDescription() {
+        if (status == null) {
+            return "Pendente";
+        }
+        return switch (status) {
+            case PENDING -> "Pendente";
+            case CONFIRMED -> "Confirmado";
+            case CANCELLED -> "Cancelado";
+        };
     }
 
     // getters and setters
@@ -110,5 +124,13 @@ public class Appointment {
 
     public void setServices(List<ServiceEntity> services) {
         this.services = services;
+    }
+
+    public AppointmentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AppointmentStatus status) {
+        this.status = status;
     }
 }

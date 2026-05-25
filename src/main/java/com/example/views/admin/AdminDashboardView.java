@@ -1,6 +1,7 @@
 package com.example.views.admin;
 
 import com.example.data.entity.Appointment;
+import com.example.data.entity.AppointmentStatus;
 import com.example.data.entity.ServiceEntity;
 import com.example.data.entity.User;
 import com.example.services.AppointmentService;
@@ -40,6 +41,7 @@ public class AdminDashboardView extends VerticalLayout {
     private final MultiSelectComboBox<ServiceEntity> servicesSelect;
     private final DatePicker datePicker;
     private final ComboBox<String> timePicker;
+    private final ComboBox<AppointmentStatus> statusSelect;
     private final Button saveButton;
     private final Button cancelButton;
 
@@ -84,6 +86,15 @@ public class AdminDashboardView extends VerticalLayout {
         timePicker = new ComboBox<>("Hora");
         timePicker.setItems(List.of("09:00", "10:00", "11:00", "14:00", "15:00", "16:00"));
 
+        statusSelect = new ComboBox<>("Status");
+        statusSelect.setItems(AppointmentStatus.values());
+        statusSelect.setItemLabelGenerator(status -> switch (status) {
+            case PENDING -> "Pendente";
+            case CONFIRMED -> "Confirmado";
+            case CANCELLED -> "Cancelado";
+        });
+        statusSelect.setWidth("200px");
+
         saveButton = new Button("Salvar alteracoes", event -> handleSave());
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
@@ -91,7 +102,7 @@ public class AdminDashboardView extends VerticalLayout {
         cancelButton.addThemeVariants(ButtonVariant.TERTIARY);
 
         HorizontalLayout formActions = new HorizontalLayout(saveButton, cancelButton);
-        HorizontalLayout formsFields = new HorizontalLayout(datePicker, timePicker);
+        HorizontalLayout formsFields = new HorizontalLayout(datePicker, timePicker, statusSelect);
         formsFields.setAlignItems(Alignment.END);
 
         editForm.add(formTitle, clientInfoLabel, servicesSelect, formsFields, formActions);
@@ -116,10 +127,45 @@ public class AdminDashboardView extends VerticalLayout {
         grid.addColumn(appointment -> appointment.isActive() ? "Ativo" : "Cancelado")
                 .setHeader("Status").setAutoWidth(true);
 
+        grid.addColumn(Appointment::getStatusDescription).setHeader("Status").setAutoWidth(true);
+
         grid.addComponentColumn(appointment -> {
+            HorizontalLayout actions = new HorizontalLayout();
+
             Button editButton = new Button("Editar", event -> selectAppointmentForEdit(appointment));
             editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-            return editButton;
+            actions.add(editButton);
+
+            if (appointment.getStatus() == AppointmentStatus.PENDING) {
+                Button confirmButton = new Button("Confirmar", event ->  {
+                    try {
+                        appointmentService.updateAppointmentStatus(appointment, AppointmentStatus.CONFIRMED);
+                        Notification.show("Agendamento confirmado com sucesso!");
+                        grid.setItems(appointmentService.listAllAppointments());
+                    } catch (Exception e) {
+                        Notification.show("Erro ao alterar status: " + e.getMessage());
+                    }
+                });
+                confirmButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_SUCCESS);
+                actions.add(confirmButton);
+            }
+
+            if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
+                Button cancelButton = new Button("Cancelar", event ->  {
+                    try {
+                        appointmentService.updateAppointmentStatus(appointment, AppointmentStatus.CANCELLED);
+                        Notification.show("Agendamento cancelado com sucesso!");
+                        grid.setItems(appointmentService.listAllAppointments());
+                    } catch (Exception e) {
+                        Notification.show("Erro ao alterar status: " + e.getMessage());
+                    }
+                });
+                cancelButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
+                actions.add(cancelButton);
+            }
+
+
+            return actions;
         }).setHeader("Acoes").setAutoWidth(true);
 
         grid.setItems(appointmentService.listAllAppointments());
@@ -132,7 +178,7 @@ public class AdminDashboardView extends VerticalLayout {
         if (editingAppointment == null) {
             return;
         }
-        if (datePicker.isEmpty() || timePicker.isEmpty() || datePicker.isEmpty()) {
+        if (datePicker.isEmpty() || timePicker.isEmpty() || datePicker.isEmpty() || statusSelect.isEmpty()) {
             Notification.show("Todos os campos devem ser preenchidos");
             return;
         }
@@ -143,7 +189,8 @@ public class AdminDashboardView extends VerticalLayout {
                     editingAppointment,
                     datePicker.getValue(),
                     selectedTime,
-                    servicesSelect.getValue()
+                    servicesSelect.getValue(),
+                    statusSelect.getValue()
             );
 
             Notification.show("Agendamento atualizado com sucesso pelo administrador.");
@@ -164,6 +211,7 @@ public class AdminDashboardView extends VerticalLayout {
         servicesSelect.setValue(new HashSet<>(appointment.getServices()));
         datePicker.setValue(appointment.getAppointmentDate());
         timePicker.setValue(appointment.getAppointmentTime().toString());
+        statusSelect.setValue(appointment.getStatus());
 
         editForm.setVisible(true);
     }
@@ -173,6 +221,7 @@ public class AdminDashboardView extends VerticalLayout {
         servicesSelect.clear();
         datePicker.clear();
         timePicker.clear();
+        statusSelect.clear();
         editForm.setVisible(false);
     }
 }
