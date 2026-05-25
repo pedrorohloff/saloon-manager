@@ -5,6 +5,7 @@ import com.example.data.entity.AppointmentStatus;
 import com.example.data.entity.ServiceEntity;
 import com.example.data.entity.User;
 import com.example.services.AppointmentService;
+import com.example.services.BusinessDashboardStats;
 import com.example.services.ServiceEntityService;
 import com.example.services.UserService;
 import com.vaadin.flow.component.button.Button;
@@ -25,6 +26,7 @@ import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 @Route("admin")
 @RolesAllowed("ADMIN")
@@ -47,6 +49,12 @@ public class AdminDashboardView extends VerticalLayout {
 
     private Appointment editingAppointment;
 
+    // dashboard elements
+    private final HorizontalLayout dashboardContainer;
+    private final Span revenueValue;
+    private final Span projectionValue;
+    private final Grid<Map.Entry<String, Long>> popularServicesGrid;
+
     public AdminDashboardView(
             UserService userService,
             AppointmentService appointmentService,
@@ -62,6 +70,69 @@ public class AdminDashboardView extends VerticalLayout {
         H2 title = new H2("Painel de Controles - Clientes");
         title.setText("Painel Administrativo - Controle de Agendamentos");
 
+        dashboardContainer = new HorizontalLayout();
+        dashboardContainer.setWidth("80%");
+        dashboardContainer.setSpacing(true);
+
+        // revenue weekly
+        VerticalLayout revenueCard = new VerticalLayout();
+        revenueCard.getStyle().set("background-color", "var(--lumo-sucess-color-10pct)");
+        revenueCard.getStyle().set("border", "1px solid var(--lumo-sucess-color-50pct)");
+        revenueCard.getStyle().set("border-radius", "var(--lumo-size-s)");
+        revenueCard.getStyle().set("padding", "var(--lumo-space-m)");
+        revenueCard.setAlignItems(Alignment.CENTER);
+        Span revTitle = new Span("Faturamento da semana");
+        revTitle.getStyle().set("font-size", "var(--lumo-font-size-s)");
+        revTitle.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        revenueValue = new Span("R$ 0,00");
+        revenueValue.getStyle().set("font-size", "var(--lumo-font-size-xxl)");
+        revenueValue.getStyle().set("font-weight", "bold");
+        revenueValue.getStyle().set("color", "var(--lumo-success-text-color)");
+        revenueCard.add(revTitle, revenueValue);
+
+        // monthly projection
+        VerticalLayout projectionCard = new VerticalLayout();
+        projectionCard.getStyle().set("background-color", "var(--lumo-sucess-color-10pct)");
+        projectionCard.getStyle().set("border", "1px solid var(--lumo-sucess-color-50pct)");
+        projectionCard.getStyle().set("border-radius", "var(--lumo-size-s)");
+        projectionCard.getStyle().set("padding", "var(--lumo-space-m)");
+        projectionCard.setAlignItems(Alignment.CENTER);
+        Span projTitle = new Span("Projecao Mensal (Base Semanal)");
+        projTitle.getStyle().set("font-size", "var(--lumo-font-size-s)");
+        projTitle.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        projectionValue = new Span("R$ 0,00");
+        projectionValue.getStyle().set("font-size", "var(--lumo-font-size-xxl)");
+        projectionValue.getStyle().set("font-weight", "bold");
+        projectionValue.getStyle().set("color", "var(--lumo-success-text-color)");
+        projectionCard.add(projTitle, projectionValue);
+
+        // most accessed services
+        VerticalLayout popularServicesCard = new VerticalLayout();
+        popularServicesCard.getStyle().set("background-color", "var(--lumo-contrast-5pct)");
+        popularServicesCard.getStyle().set("border", "1px solid var(--lumo-contrast-20pct)");
+        popularServicesCard.getStyle().set("border-radius", "var(--lumo-size-s)");
+        popularServicesCard.getStyle().set("padding", "var(--lumo-space-s)");
+        popularServicesCard.setWidth("40%");
+
+        Span servicesTitle = new Span("Servicos da Semana");
+        servicesTitle.getStyle().set("font-weight", "bold");
+        servicesTitle.getStyle().set("font-size", "var(--lumo-font-size-s)");
+
+        popularServicesGrid = new Grid<>();
+        popularServicesGrid.setAllRowsVisible(true);
+        popularServicesGrid.addColumn(Map.Entry::getKey).setHeader("Servico");
+        popularServicesGrid.addColumn(Map.Entry::getValue).setHeader("Reservas");
+        popularServicesGrid.getStyle().set("font-size" , "var(--lumo-font-size-xs)");
+
+        popularServicesCard.add(servicesTitle, popularServicesGrid);
+
+        HorizontalLayout kpisContainer = new HorizontalLayout(revenueCard, projectionCard);
+        kpisContainer.setWidth("60%");
+        kpisContainer.setSpacing(true);
+
+        dashboardContainer.add(kpisContainer, popularServicesCard);
+
+        // admin edit form
         editForm = new VerticalLayout();
         editForm.setPadding(true);
         editForm.setSpacing(true);
@@ -107,6 +178,7 @@ public class AdminDashboardView extends VerticalLayout {
 
         editForm.add(formTitle, clientInfoLabel, servicesSelect, formsFields, formActions);
 
+        // appointment grid
         H3 gridTitle = new H3("Lista de agendamentos");
         grid = new Grid<>(Appointment.class, false);
 
@@ -136,6 +208,7 @@ public class AdminDashboardView extends VerticalLayout {
             editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
             actions.add(editButton);
 
+            // directly altering status on grid
             if (appointment.getStatus() == AppointmentStatus.PENDING) {
                 Button confirmButton = new Button("Confirmar", event ->  {
                     try {
@@ -171,7 +244,8 @@ public class AdminDashboardView extends VerticalLayout {
         grid.setItems(appointmentService.listAllAppointments());
         grid.setWidth("80%");
 
-        add(title, editForm, gridTitle, grid);
+        add(title, new H3("Painel de Desempenho Semanal"), dashboardContainer, editForm, gridTitle, grid);
+        refreshDashboard();
     }
 
     private void handleSave() {
@@ -223,5 +297,15 @@ public class AdminDashboardView extends VerticalLayout {
         timePicker.clear();
         statusSelect.clear();
         editForm.setVisible(false);
+    }
+
+    private void refreshDashboard() {
+        BusinessDashboardStats stats = appointmentService.getDashboardStats();
+
+        revenueValue.setText("R$ " + String.format("%.2f", stats.weeklyRevenue()));
+        projectionValue.setText("R$ " + String.format("%.2f", stats.monthlyProjection()));
+
+        popularServicesGrid.setItems(stats.serviceCounts().entrySet());
+        grid.setItems(appointmentService.listAllAppointments());
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -196,6 +197,30 @@ public class AppointmentService {
         }
 
         appointmentRepository.save(appointment);
+    }
+
+    public BusinessDashboardStats getDashboardStats() {
+        LocalDate today = LocalDate.now();
+        LocalDate startOfWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+
+        // filter active appointments on the same week
+        List<Appointment> weeklyAppointments = appointmentRepository.findAll().stream()
+                .filter(a -> a.getStatus() != AppointmentStatus.CANCELLED)
+                .filter(a -> !a.getAppointmentDate().isBefore(startOfWeek) && !a.getAppointmentDate().isAfter(endOfWeek))
+                .toList();
+
+        double weeklyRevenue = weeklyAppointments.stream()
+                .mapToDouble(Appointment::getTotalPrice)
+                .sum();
+
+        Map<String, Long> serviceCounts = weeklyAppointments.stream()
+                .flatMap(a -> a.getServices().stream())
+                .collect(Collectors.groupingBy(ServiceEntity::getName, Collectors.counting()));
+
+        double monthlyProjection = (weeklyRevenue/7) * 30;
+
+        return new BusinessDashboardStats(weeklyRevenue, serviceCounts, monthlyProjection);
     }
 
     // auxiliary methods
