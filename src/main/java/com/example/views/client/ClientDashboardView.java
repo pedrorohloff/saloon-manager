@@ -6,6 +6,10 @@ import com.example.data.entity.User;
 import com.example.services.AppointmentService;
 import com.example.services.ServiceEntityService;
 import com.example.services.UserService;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.UnorderedList;
+import com.vaadin.flow.component.html.ListItem;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -19,10 +23,12 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
+import org.springframework.boot.autoconfigure.web.format.DateTimeFormatters;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
 
@@ -30,14 +36,25 @@ import java.util.List;
 @RolesAllowed({"CLIENT", "ADMIN"})
 public class ClientDashboardView extends VerticalLayout {
 
+    // dependency injection
     private final AppointmentService appointmentService;
     private final UserService userService;
     private final ServiceEntityService serviceEntityService;
+
+    // create/edit forms
     private final MultiSelectComboBox<ServiceEntity> servicesSelect;
     private final DatePicker datePicker;
     private final ComboBox<String> timePicker;
     private final Button appointmentButton;
     private final Button cancelButton;
+
+    // filters
+    private final DatePicker filterStartDate;
+    private final DatePicker filterEndDate;
+    private final Button filterButton;
+    private final Button clearFilterButton;
+
+    // others
     private final Grid<Appointment> grid;
     private Appointment editingAppointment = null;
     private final User loggedInClient;
@@ -76,6 +93,14 @@ public class ClientDashboardView extends VerticalLayout {
             timePicker.setEnabled(event.getValue() != null);
         });
 
+        filterStartDate = new DatePicker("De");
+        filterEndDate = new DatePicker("Ate");
+        filterButton = new Button("Filtrar", event -> handleFilter());
+        clearFilterButton = new Button("Limpar Filtro", event -> handleClearFilter());
+
+        HorizontalLayout filterLayout = new HorizontalLayout(filterStartDate, filterEndDate, filterButton, clearFilterButton);
+        filterLayout.setAlignItems(Alignment.END);
+
         H3 gridTitle = new H3("Lista de agendamentos");
         grid = new Grid<>(Appointment.class, false);
 
@@ -85,6 +110,22 @@ public class ClientDashboardView extends VerticalLayout {
         grid.addColumn(appointment -> "R$ " + String.format("%.2f", appointment.getTotalPrice()))
                 .setHeader("Valor Total")
                 .setAutoWidth(true);
+
+        grid.addComponentColumn(appointment -> {
+            HorizontalLayout actions = new HorizontalLayout();
+
+            Button detailsButton = new Button("Detalhes", event -> showDetails(appointment));
+            detailsButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+            actions.add(detailsButton);
+
+            if (appointmentService.isModifiable(appointment)) {
+                Button editButton = new Button("Editar", event -> handleGridSelection(appointment));
+                editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+                actions.add(editButton);
+            }
+
+            return actions;
+        }).setHeader("Acoes").setAutoWidth(true);
 
         grid.setItems(appointmentService.findAppointmentsByClient(loggedInClient));
         grid.setWidth("80%");
@@ -101,12 +142,69 @@ public class ClientDashboardView extends VerticalLayout {
         appointmentButton.addClickListener(event -> handleAppointmentSave());
 
         // grid selecion
-        grid.asSingleSelect().addValueChangeListener(event -> handleGridSelection(event.getValue()));
+        // grid.asSingleSelect().addValueChangeListener(event -> handleGridSelection(event.getValue()));
 
         HorizontalLayout dateTimeLine = new HorizontalLayout(datePicker, timePicker);
         HorizontalLayout actionsLine = new HorizontalLayout(appointmentButton, cancelButton);
 
-        add(title, servicesSelect, dateTimeLine, appointmentButton, gridTitle, grid);
+        add(title, servicesSelect, dateTimeLine, actionsLine, new H3("Filtrar Historico"), filterLayout, gridTitle, grid);
+    }
+
+    // auxiliary methods
+    private void showDetails(Appointment appointment) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Detalhes do Agendamento");
+
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialogLayout.setPadding(false);
+        dialogLayout.setSpacing(true);
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        dialogLayout.add(new Span("Client: " + appointment.getClient().getName()));
+        dialogLayout.add(new Span("Telefone: " + appointment.getClient().getTelephone()));
+        dialogLayout.add(new Span("Data: " + appointment.getAppointmentDate().format(dateFormatter)
+                + " as " + appointment.getAppointmentTime()));
+
+        dialogLayout.add(new H3("Servicos Contratados: "));
+        UnorderedList list = new UnorderedList();
+        for (ServiceEntity service : appointment.getServices()) {
+            list.add(new ListItem(service.getName() + " - R$ " + String.format("%.2f", appointment.getTotalPrice())));
+        }
+        dialogLayout.add(list);
+
+        dialogLayout.add(new Span("Valor Total: R$ " + String.format("%.2f", appointment.getTotalPrice())));
+
+        Button closeButton = new Button("Fechar", event -> dialog.close());
+        closeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        dialog.getFooter().add(closeButton);
+
+        dialog.add(dialogLayout);
+        dialog.open();
+    }
+
+    private void handleFilter() {
+        if (filterStartDate.isEmpty() || filterEndDate.isEmpty()) {
+            Notification.show("Selecine ambas as datas para aplicar o filtro.");
+            return;
+        }
+
+        try {
+            List<Appointment> filtered = appointmentService.findAppointmentsByClientAndPeriod(
+                    loggedInClient,
+                    filterStartDate.getValue(),
+                    filterEndDate.getValue()
+            );
+            grid.setItems(filtered);
+            Notification.show("Filtro aplicado com sucesso. Total encontrado: " + filtered.size());
+        } catch (Exception e) {
+            Notification.show("Erro ao filtrar: " + e.getMessage());
+        }
+    }
+
+    private void handleClearFilter() {
+        filterStartDate.clear();
+        filterEndDate.clear();
+        grid.setItems(appointmentService.findAppointmentsByClient(loggedInClient));
     }
 
     private void handleGridSelection(Appointment selected) {

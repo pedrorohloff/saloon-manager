@@ -57,7 +57,16 @@ public class AppointmentService {
         return calculateBusinessDaysBetween(LocalDate.now(), appointment.getAppointmentDate()) >= 2;
     }
 
-    @Transactional
+    public List<Appointment> findAppointmentsByClientAndPeriod(User client, LocalDate start, LocalDate end) {
+        if (client == null || start == null || end == null) {
+            throw new IllegalArgumentException("Parametros de busca sao obrigatorios");
+        }
+        if (start.isAfter(end)) {
+            throw new IllegalArgumentException("A data de inicio nao pode ser depois da data final");
+        }
+        return appointmentRepository.findByClientAndAppointmentDateBetween(client, start, end);
+    }
+
     public void updateAppointment(Appointment appointment,
                                   LocalDate date, LocalTime time,
                                   Collection<ServiceEntity> services) {
