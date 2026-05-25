@@ -8,7 +8,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 
-@Route("")
+@Route("admin")
 @RolesAllowed("ADMIN")
 public class AdminDashboardView extends VerticalLayout {
     public AdminDashboardView(UserService userService) {

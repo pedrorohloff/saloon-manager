@@ -18,7 +18,11 @@ public class DatabaseInitializer implements CommandLineRunner {
     private final ServiceEntityRepository serviceEntityRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DatabaseInitializer(UserRepository userRepository, ServiceEntityRepository serviceEntityRepository,PasswordEncoder passwordEncoder) {
+    public DatabaseInitializer(
+            UserRepository userRepository,
+            ServiceEntityRepository serviceEntityRepository,
+            PasswordEncoder passwordEncoder
+    ) {
         this.userRepository = userRepository;
         this.serviceEntityRepository = serviceEntityRepository;
         this.passwordEncoder = passwordEncoder;
@@ -27,20 +31,46 @@ public class DatabaseInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (userRepository.count() == 0) {
-            User admin = new User();
+            User admin = new User(
+                    "Admin Leila",
+                    "(11) 91111-2222",
+                    "admin",
+                    passwordEncoder.encode("admin123"),
+                    RoleType.ADMIN
+            );
 
-            admin.setUsername("admin");
-            admin.setPassword(passwordEncoder.encode("admin1234"));
-            admin.setRole(RoleType.ADMIN);
+            User client1 = new User(
+                    "Pedro",
+                    "(77) 92311-5522",
+                    "pedro rohloff",
+                    passwordEncoder.encode("pedro123"),
+                    RoleType.CLIENT
+            );
+
+            User client2 = new User(
+                    "Maria Joaquina",
+                    "(67) 95667-4556",
+                    "maria joaquina",
+                    passwordEncoder.encode("maria123"),
+                    RoleType.CLIENT
+            );
 
             userRepository.save(admin);
-            System.out.println("Test admin user created successfully\n(\nUser: admin\nPassword: admin1234\n)");
+            userRepository.save(client1);
+            userRepository.save(client2);
+
+            System.out.println("Test user created successfully\n(\nUser: " + admin.getUsername() +
+                    "\nPassword: " + admin.getPassword() + "\n)");
+            System.out.println("Test user created successfully\n(\nUser: " + client1.getUsername() +
+                    "\nPassword: pedro123\n)");
+            System.out.println("Test user created successfully\n(\nUser: " + client2.getUsername() +
+                    "\nPassword: maria123\n)");
         }
 
         if (serviceEntityRepository.count() == 0) {
             serviceEntityRepository.saveAll(List.of(
                     new ServiceEntity("Corte de Cabelo Masculino", 45.00),
-                    new ServiceEntity("Corte de Cabelo Masculino", 70.00),
+                    new ServiceEntity("Corte de Cabelo Feminino", 70.00),
                     new ServiceEntity("Manicure", 30.00),
                     new ServiceEntity("Pedicure", 35.00),
                     new ServiceEntity("Design de Sobrancelha", 25.00),

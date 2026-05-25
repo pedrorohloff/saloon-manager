@@ -4,10 +4,7 @@ package com.example.views;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
 @Route("login")
@@ -24,7 +21,10 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
 
         login.setAction("login");
 
-        add(new H1("Cabeleileila Salao"), login);
+        RouterLink registerLink = new RouterLink("Nao possui uma conta? Cadastre-se", RegisterView.class);
+        registerLink.getStyle().set("margin-top", "var(--lumo-space-m)");
+
+        add(new H1("Cabeleileila Salao"), login, registerLink);
     }
 
     @Override
