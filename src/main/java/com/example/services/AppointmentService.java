@@ -152,6 +152,25 @@ public class AppointmentService {
         }
     }
 
+    public void updateAppointmentByAdmin(
+            Appointment appointment,
+            LocalDate date, LocalTime time,
+            Collection<ServiceEntity> services
+    ) {
+        if (appointment == null) {
+            throw new IllegalArgumentException("Agendamento invalido");
+        }
+        if (date == null || time == null || services.isEmpty()) {
+            throw new IllegalArgumentException("Todos os campos obrigatorios devem ser preenchidos.");
+        }
+
+        appointment.setAppointmentDate(date);
+        appointment.setAppointmentTime(time);
+        appointment.setServices(new ArrayList<>(services));
+
+        appointmentRepository.save(appointment);
+    }
+
     // auxiliary methods
     private long calculateBusinessDaysBetween(LocalDate start, LocalDate end) {
         if (start.isAfter(end)) {
