@@ -33,7 +33,7 @@ public class Appointment {
     private LocalDate appointmentDate;
     private boolean isActive;
 
-    @Enumerated
+    @Enumerated(EnumType.STRING)
     private AppointmentStatus status = AppointmentStatus.PENDING;
 
     public User getClient() {
@@ -74,11 +74,7 @@ public class Appointment {
         if (status == null) {
             return "Pendente";
         }
-        return switch (status) {
-            case PENDING -> "Pendente";
-            case CONFIRMED -> "Confirmado";
-            case CANCELLED -> "Cancelado";
-        };
+        return status.getDescription();
     }
 
     // getters and setters

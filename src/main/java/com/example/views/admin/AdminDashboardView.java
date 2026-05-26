@@ -153,11 +153,7 @@ public class AdminDashboardView extends VerticalLayout implements AdminDashboard
 
         statusSelect = new ComboBox<>("Status");
         statusSelect.setItems(AppointmentStatus.values());
-        statusSelect.setItemLabelGenerator(status -> switch (status) {
-            case PENDING -> "Pendente";
-            case CONFIRMED -> "Confirmado";
-            case CANCELLED -> "Cancelado";
-        });
+        statusSelect.setItemLabelGenerator(AppointmentStatus::getDescription);
         statusSelect.setWidth("200px");
 
         saveButton = new Button("Salvar alterações", event -> presenter.onSaveEditClicked(

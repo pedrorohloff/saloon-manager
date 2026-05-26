@@ -24,9 +24,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             throw new UsernameNotFoundException("Cannot find user by the username of: " + username);
         }
 
-        // translate the 'Role.ADMIN' to spring default 'ROLE_ADMIN'.
-        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
-
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
                 .password(user.getPassword())

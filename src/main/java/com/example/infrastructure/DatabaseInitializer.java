@@ -5,6 +5,7 @@ import com.example.data.entity.ServiceEntity;
 import com.example.data.entity.User;
 import com.example.data.repository.ServiceEntityRepository;
 import com.example.data.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,9 @@ public class DatabaseInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final ServiceEntityRepository serviceEntityRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${saloon.support.phone}")
+    private String saloonNumber;
 
     public DatabaseInitializer(
             UserRepository userRepository,
@@ -33,7 +37,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         if (userRepository.count() == 0) {
             User admin = new User(
                     "Admin Leila",
-                    "(11) 91111-2222",
+                    saloonNumber,
                     "admin",
                     passwordEncoder.encode("admin123"),
                     RoleType.ADMIN

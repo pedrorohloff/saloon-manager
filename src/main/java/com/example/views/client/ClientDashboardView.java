@@ -42,6 +42,9 @@ public class ClientDashboardView extends VerticalLayout implements ClientDashboa
 
     private final ClientDashboardPresenter presenter;
 
+    // formatter
+    private final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
     // forms
     private final MultiSelectComboBox<ServiceEntity> servicesSelect;
     private final DatePicker datePicker;
@@ -166,10 +169,9 @@ public class ClientDashboardView extends VerticalLayout implements ClientDashboa
         dialogLayout.setPadding(false);
         dialogLayout.setSpacing(true);
 
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         dialogLayout.add(new Span("Client: " + appointment.getClient().getName()));
         dialogLayout.add(new Span("Telefone: " + appointment.getClient().getTelephone()));
-        dialogLayout.add(new Span("Data: " + appointment.getAppointmentDate().format(dateFormatter)
+        dialogLayout.add(new Span("Data: " + appointment.getAppointmentDate().format(DATE_FORMATTER)
                 + " às " + appointment.getAppointmentTime()));
 
         dialogLayout.add(new H3("Serviços Contratados: "));
@@ -211,7 +213,6 @@ public class ClientDashboardView extends VerticalLayout implements ClientDashboa
         }
 
         recommendationsContainer.setVisible(true);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
         for (GroupingRecommendation rec : recommendations) {
             HorizontalLayout card = new HorizontalLayout();
@@ -232,8 +233,8 @@ public class ClientDashboardView extends VerticalLayout implements ClientDashboa
             titleSpan.getStyle().set("color", "var(--lumo-primary-text-color)");
 
             Span descSpan = new Span("Identificamos que voce possui agendamentos na semana de " +
-                    rec.weekStart().format(formatter) + ". Sugerimos reagenda-las para o dia do seu primeiro agendamento (" +
-                    rec.targetDate().format(formatter) + ") para sua conveniência");
+                    rec.weekStart().format(DATE_FORMATTER) + ". Sugerimos reagenda-las para o dia do seu primeiro agendamento (" +
+                    rec.targetDate().format(DATE_FORMATTER) + ") para sua conveniência");
             descSpan.getStyle().set("font-size", "var(--lumo-font-size-s)");
 
             UnorderedList list = new UnorderedList();
@@ -242,13 +243,13 @@ public class ClientDashboardView extends VerticalLayout implements ClientDashboa
 
             for (Appointment appointment : rec.appointmentsToReschedule()) {
                 list.add(new ListItem(appointment.getFormattedServiceEntity() + " - atual: " +
-                        appointment.getAppointmentDate().format(formatter) + " às " +
+                        appointment.getAppointmentDate().format(DATE_FORMATTER) + " às " +
                         appointment.getAppointmentTime()));
             }
 
             textLayout.add(titleSpan, descSpan, list);
 
-            Button groupButton = new Button("Reagendar para " + rec.targetDate().format(formatter));
+            Button groupButton = new Button("Reagendar para " + rec.targetDate().format(DATE_FORMATTER));
             groupButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
             groupButton.addClickListener(event -> presenter.onGroupRecommendationClicked(rec));
 

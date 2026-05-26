@@ -43,7 +43,7 @@ public class AdminDashboardPresenter {
     }
 
     public void init() {
-        view.setServices(serviceEntityService.listAllSerivces());
+        view.setServices(serviceEntityService.listAllServices());
         refreshDashboard();
     }
 

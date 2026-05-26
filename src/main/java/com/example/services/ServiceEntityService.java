@@ -15,7 +15,7 @@ public class ServiceEntityService {
         this.repository = repository;
     }
 
-    public List<ServiceEntity> listAllSerivces() {
+    public List<ServiceEntity> listAllServices() {
         return repository.findAll();
     }
 

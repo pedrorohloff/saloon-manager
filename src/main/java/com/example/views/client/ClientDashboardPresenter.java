@@ -8,6 +8,7 @@ import com.example.services.GroupingRecommendation;
 import com.example.services.ServiceEntityService;
 import com.example.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,9 @@ public class ClientDashboardPresenter {
     private User loggedInClient;
     private Appointment editingAppointment;
 
+    @Value("${saloon.support.phone}")
+    private String saloonNumber;
+
     @Autowired
     public ClientDashboardPresenter(AppointmentService appointmentService,
                                     UserService userService,
@@ -46,7 +50,7 @@ public class ClientDashboardPresenter {
         String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
         this.loggedInClient = userService.findByUsername(currentUser);
 
-        view.setServices(serviceEntityService.listAllSerivces());
+        view.setServices(serviceEntityService.listAllServices());
         refreshAppointments();
         refreshRecommendations();
     }
@@ -88,7 +92,7 @@ public class ClientDashboardPresenter {
         }
 
         if (!appointmentService.isModifiable(appointment)) {
-            view.showNotification("Não é possível alterar este agendamento online (limite de dois dias úteis). Por favor entre em contato pelo telefone: (11) 91111-2222");
+            view.showNotification("Não é possível alterar este agendamento online (limite de dois dias úteis). Por favor entre em contato pelo telefone: " + saloonNumber);
             return;
         }
 
@@ -98,7 +102,7 @@ public class ClientDashboardPresenter {
     }
 
     public void onSaveClicked(LocalDate date, String timeStr, Set<ServiceEntity> services) {
-        if (date == null || timeStr == null || services.isEmpty() || services == null) {
+        if (date == null || timeStr == null || services == null || services.isEmpty()) {
             view.showNotification("Campos obrigatórios não preenchidos");
             return;
         }

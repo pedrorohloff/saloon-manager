@@ -141,7 +141,7 @@ public class AppointmentService {
 
     @Transactional
     public void groupAppointments(List<Appointment> appointments, LocalDate targetDate) {
-        if (appointments.isEmpty() || appointments == null || targetDate == null) {
+        if (appointments == null || appointments.isEmpty() || targetDate == null) {
             throw new IllegalArgumentException("Parametros invalidos para o agrupamento");
         }
 
@@ -228,16 +228,10 @@ public class AppointmentService {
         if (start.isAfter(end)) {
             return 0;
         }
-        long businessDays = 0;
-        LocalDate current = start.plusDays(1);
-
-        while (!current.isAfter(end)) {
-            if (isBusinessDay(current)) {
-                businessDays++;
-            }
-            current = current.plusDays(1);
-        }
-        return businessDays;
+        return start.plusDays(1)
+                .datesUntil(end.plusDays(1))
+                .filter(this::isBusinessDay)
+                .count();
     }
 
     private boolean isBusinessDay(LocalDate date) {
