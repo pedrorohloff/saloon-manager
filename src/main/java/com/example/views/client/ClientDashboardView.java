@@ -7,6 +7,7 @@ import com.example.services.AppointmentService;
 import com.example.services.ServiceEntityService;
 import com.example.services.UserService;
 import com.example.services.GroupingRecommendation;
+import com.example.views.MainLayout;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.html.UnorderedList;
@@ -34,7 +35,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
 
-@Route("agendamento")
+@Route(value = "agendamento", layout = MainLayout.class)
 @RolesAllowed({"CLIENT", "ADMIN"})
 public class ClientDashboardView extends VerticalLayout {
 

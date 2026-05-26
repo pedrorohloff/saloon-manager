@@ -21,6 +21,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.example.views.MainLayout;
 import jakarta.annotation.security.RolesAllowed;
 
 import java.time.LocalTime;
@@ -28,7 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-@Route("admin")
+@Route(value = "admin", layout = MainLayout.class)
 @RolesAllowed("ADMIN")
 public class AdminDashboardView extends VerticalLayout {
 
@@ -244,7 +246,16 @@ public class AdminDashboardView extends VerticalLayout {
         grid.setItems(appointmentService.listAllAppointments());
         grid.setWidth("80%");
 
-        add(title, new H3("Painel de Desempenho Semanal"), dashboardContainer, editForm, gridTitle, grid);
+        HorizontalLayout tableHeader = new HorizontalLayout();
+        tableHeader.setWidth("80%");
+        tableHeader.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        tableHeader.setAlignItems(Alignment.CENTER);
+
+        Button newAppointmentButton = new Button("Novo Agendamento", event -> openNewAppointmentDialog(userService));
+        newAppointmentButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
+        tableHeader.add(gridTitle, newAppointmentButton);
+
+        add(title, new H3("Painel de Desempenho Semanal"), dashboardContainer, editForm, tableHeader, grid);
         refreshDashboard();
     }
 
@@ -307,5 +318,65 @@ public class AdminDashboardView extends VerticalLayout {
 
         popularServicesGrid.setItems(stats.serviceCounts().entrySet());
         grid.setItems(appointmentService.listAllAppointments());
+    }
+
+    private void openNewAppointmentDialog(UserService userService) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Criar Novo Agendamento (Administrador)");
+
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialogLayout.setSpacing(true);
+        dialogLayout.setPadding(false);
+
+        ComboBox<User> clientSelect = new ComboBox<>("Selecione o Cliente");
+        clientSelect.setItems(userService.listAllClients());
+        clientSelect.setItemLabelGenerator(User::getName);
+        clientSelect.setWidthFull();
+        clientSelect.setRequiredIndicatorVisible(true);
+
+        MultiSelectComboBox<ServiceEntity> services = new MultiSelectComboBox<>("Selecione os Serviços");
+        services.setItems(serviceEntityService.listAllSerivces());
+        services.setItemLabelGenerator(ServiceEntity::getName);
+        services.setWidthFull();
+        services.setRequiredIndicatorVisible(true);
+
+        DatePicker date = new DatePicker("Data");
+        date.setRequiredIndicatorVisible(true);
+        date.setWidthFull();
+
+        ComboBox<String> time = new ComboBox<>("Hora");
+        time.setItems(List.of("09:00", "10:00", "11:00", "14:00", "15:00", "16:00"));
+        time.setRequiredIndicatorVisible(true);
+        time.setWidthFull();
+
+        dialogLayout.add(clientSelect, services, date, time);
+
+        Button confirmBtn = new Button("Agendar", event -> {
+            if (clientSelect.isEmpty() || services.isEmpty() || date.isEmpty() || time.isEmpty()) {
+                Notification.show("Todos os campos obrigatórios devem ser preenchidos.");
+                return;
+            }
+            try {
+                appointmentService.createAppointment(
+                        clientSelect.getValue(),
+                        date.getValue(),
+                        LocalTime.parse(time.getValue()),
+                        services.getValue()
+                );
+                Notification.show("Agendamento criado com sucesso para o cliente!");
+                dialog.close();
+                refreshDashboard();
+            } catch (Exception e) {
+                Notification.show("Erro ao criar agendamento: " + e.getMessage());
+            }
+        });
+        confirmBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
+
+        Button cancelBtn = new Button("Cancelar", event -> dialog.close());
+        cancelBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
+        dialog.getFooter().add(confirmBtn, cancelBtn);
+        dialog.add(dialogLayout);
+        dialog.open();
     }
 }
