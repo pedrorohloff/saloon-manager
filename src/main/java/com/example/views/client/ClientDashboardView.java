@@ -131,11 +131,9 @@ public class ClientDashboardView extends VerticalLayout {
             detailsButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
             actions.add(detailsButton);
 
-            if (appointmentService.isModifiable(appointment)) {
-                Button editButton = new Button("Editar", event -> handleGridSelection(appointment));
-                editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-                actions.add(editButton);
-            }
+            Button editButton = new Button("Editar", event -> handleGridSelection(appointment));
+            editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+            actions.add(editButton);
 
             return actions;
         }).setHeader("Acoes").setAutoWidth(true);
