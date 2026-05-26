@@ -237,13 +237,16 @@ public class AdminDashboardView extends VerticalLayout {
             }
 
             return actions;
-        }).setHeader("Acoes").setAutoWidth(true);
+        })
+                .setHeader("Acoes")
+                .setWidth("280px")
+                .setFlexGrow(0);
 
         grid.setItems(appointmentService.listAllAppointments());
-        grid.setWidth("80%");
+        grid.setWidth("90%");
 
         HorizontalLayout tableHeader = new HorizontalLayout();
-        tableHeader.setWidth("80%");
+        tableHeader.setWidth("90%");
         tableHeader.setJustifyContentMode(JustifyContentMode.BETWEEN);
         tableHeader.setAlignItems(Alignment.CENTER);
 
