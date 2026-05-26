@@ -12,6 +12,11 @@ O aplicativo possui as seguintes funções principais:
 - Edição de agendamentos para clientes;
 - Visualização de detalhes do agendamento;
 
+## Artefatos (Imagens e Videos)
+
+Todos os artefatos gerados estão presentes na pasta `imagens-e-videos`.<br><br>
+**OBS:** Tive um problema na gravação e as cores aparecem com glitch e artefatos, isso não se replica na aplicação, apenas no vídeo de demonstração.
+
 ## Tecnologias Utilizadas e Observações
 
 Conforme a restrição de tempo imposta para a entrega do aplicativo, foi decido a utilização da seguinte stack:
