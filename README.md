@@ -1,85 +1,147 @@
-# My Application README
+# Cabeleleila Leila Salão de Beleiza
 
-- [ ] TODO Replace or update this README with instructions relevant to your application
+O aplicativo Saloon-Manager tem com objetivo principal a gestão do salão de beleza _Cabeleleila Leila Salão de Beleiza_, possuindo ferramentas de agendamento de serviços presentes no salão e outras ferramentas organizacionais e gerenciais.
+
+O aplicativo possui as seguintes funções principais: 
+- Gerenciamento de Agendamento (Alterar Status e outros) via Painel de Administrador; 
+- Acompanhamento do desempenho do salão com renda semanal confirmada e projeção de renda mensal;
+- Agendamento de Serviços no Painel de Clientes;
+- Sugestão de reagendamento automático para clientes com mais de três agendamentos na mesma semana;
+- Histórico de agendamentos realizados por cliente;
+- Filtro de Data para o histórico de agendamentos;
+- Edição de agendamentos para clientes;
+- Visualização de detalhes do agendamento;
+
+## Tecnologias Utilizadas e Observações
+
+Conforme a restrição de tempo imposta para a entrega do aplicativo, foi decido a utilização da seguinte stack:
+
+- **Java 25**<br>
+  Essa tecnologia foi escolhida pois além de ser uma ótima opção para o caso, é a linguagem que possuo maior experiência na construção de aplicativos Web.
+
+- **Spring Boot 4.0.6**<br>
+  Essa tecnologia foi escolhida para facilitar o desenvolvimento web, contendo diversas funcionalidades embarcadas em seu kit de desenvolvimento (Spring Web, Spring Security, etc).
+
+- **Vaadin Flow 25.1.5**<br>
+  Essa tecnologia foi escolhida por sua facilidade e rapidez no desenvolvimento de uma interface de usuário utilizando diretamente Java, sem precisar realizar a separação entre backend e frontend, agilizando o desenvolvimento.
+
+- **PostgreSQL 16**<br>
+  Banco de dados relacional com ótimo desempenho, além disso, o modelo relacional cumpre o seu papel perfeitamente no caso desse aplicativo, realizando o relacionamento entre agendamentos e serviços.
+  
+- **Maven**<br>
+  Ferramenta extremamente comum para o gerenciamento de pacotes e sistema de build (/mvnw). 
+
+- **Docker / Docker Compose**<br>
+  Facilita o desenvolvimento e organização do projeto, onde o banco de dados e aplicação podem ser rodadas dentro de containers pré-configurados, pulando qualquer configuração extra de ambiente de desenvolvimento.
+
 
 ## Project Structure
 
-This project has the following structure:
+O projeto segue a seguinte arquitetura:
 
+```text
+saloon-manager/
+├── Dockerfile
+├── docker-compose.yaml
+├── LICENSE.md
+├── pom.xml
+├── README.md
+├── mvnw
+├── mvnw.cmd
+└── src/
+    ├── main/
+    │   ├── java/
+    │   │   └── com/
+    │   │       └── example/
+    │   │           ├── Application.java
+    │   │           ├── data/
+    │   │           │   ├── entity/
+    │   │           │   │   ├── Appointment.java
+    │   │           │   │   ├── AppointmentStatus.java
+    │   │           │   │   ├── RoleType.java
+    │   │           │   │   ├── ServiceEntity.java
+    │   │           │   │   └── User.java
+    │   │           │   └── repository/
+    │   │           │       ├── AppointmentRepository.java
+    │   │           │       ├── ServiceEntityRepository.java
+    │   │           │       └── UserRepository.java
+    │   │           ├── infrastructure/
+    │   │           │   ├── DatabaseInitializer.java
+    │   │           │   └── security/
+    │   │           │       └── SecurityConfig.java
+    │   │           ├── services/
+    │   │           │   ├── AppointmentService.java
+    │   │           │   ├── BusinessDashboardStats.java
+    │   │           │   ├── GroupingRecommendation.java
+    │   │           │   ├── ServiceEntityService.java
+    │   │           │   ├── UserDetailsServiceImpl.java
+    │   │           │   └── UserService.java
+    │   │           └── views/
+    │   │               ├── HomeView.java
+    │   │               ├── LoginView.java
+    │   │               ├── MainLayout.java
+    │   │               ├── RegisterView.java
+    │   │               ├── admin/
+    │   │               │   ├── AdminDashboardPresenter.java
+    │   │               │   ├── AdminDashboardView.java
+    │   │               │   └── AdminDashboardViewInterface.java
+    │   │               └── client/
+    │   │                   ├── ClientDashboardPresenter.java
+    │   │                   ├── ClientDashboardView.java
+    │   │                   └── ClientDashboardViewInterface.java
+    │   └── resources/
+    │       ├── application.properties
+    │       ├── assets/
+    │       │   └── saloon-icon.svg
+    │       └── META-INF/
+    │           └── resources/
+    │               ├── styles.css
+    │               ├── view-title.css
+    │               └── icons/
+    │                   └── clipboard-check.svg
+    └── test/
+        └── java/
+            └── com/
+                └── example/
 ```
-src
-├── main/java
-│   └── [application package]
-│       ├── base
-│       │   └── ui
-│       │       ├── MainLayout.java
-│       │       └── ViewTitle.java
-│       ├── examplefeature
-│       │   ├── ui
-│       │   │   └── TaskListView.java
-│       │   ├── Task.java
-│       │   ├── TaskRepository.java
-│       │   └── TaskService.java                
-│       └── Application.java     
-├── main/resources
-│   ├── META-INF
-│   │   └── resources
-│   │       ├── icons
-│   │       │   └── clipboard-check.svg
-│   │       ├── styles.css
-│   │       └── view-title.css
-│   └── application.properties 
-└── test/java
-    └── [application package]
-        └── examplefeature
-            ├── ui
-            │   └── TaskListViewTest.java
-            └── TaskServiceTest.java                 
-```
 
-The main entry point into the application is `Application.java`. This class contains the `main()` method that starts up 
-the Spring Boot application.
+O ponto de acesso principal da aplicação é `Application.java`. Essa classe contém o método `main()` que inicia o _Spring Boot application_.
 
-The project follows a *feature-based package structure*, organizing code by *functional units* rather than traditional 
-architectural layers. It includes two feature packages: `base` and `examplefeature`.
-
-* The `base` package contains classes meant for reuse across different features, either through composition or 
-  inheritance. You can use them as-is, tweak them to your needs, or remove them.
-* The `examplefeature` package is an example feature package that demonstrates the structure. It represents a 
-  *self-contained unit of functionality*, including UI components, business logic, data access, and an integration test.
-  Once you create your own features, *you'll remove this package*.
+O projeto é estruturado nos seguintes pacotes:
+* **data**: Contém as entidades JPA (como `Appointment`, `User`, `ServiceEntity`) e repositórios do Spring Data para acesso ao banco de dados.
+* **infrastructure**: Contém configurações do sistema, como configuração de segurança e implantação de dados no banco de dados.
+* **services**: Contém o estereótipo `@Service` do Spring, classes com regras de negócio, limites de transações, e records (ex: `AppointmentService`).
+* **views**: Contém layouts de interface de usuário e views baseadas no Vaadin Flow, usando o padrão arquitetural MVP (Model-View-Presenter).
 
 
-## Starting in Development Mode
+## Como Rodar o Projeto
 
-To start the application in development mode, import it into your IDE and run the `Application` class. 
-You can also start the application from the command line by running: 
+Para rodar o aplicativo e o seu banco de dados usando o comando:
 
 ```bash
-./mvnw
+docker compose up -d
 ```
 
-## Building for Production
-
-To build the application in production mode, run:
+Isso vai criar um container contendo o banco de dados, chamado _app-postgres-db-1_, e um container para a aplicação, chamado _saloon-app_.
+<br>
+Após isso, acesse o seu navegador de preferência navegue até:
 
 ```bash
-./mvnw package
+http://localhost:8080/login
 ```
-
-To build a Docker image, run:
+Para realizar login na plataforma, ou até:
 
 ```bash
-docker build -t my-application:latest .
+http://localhost:8080/register
 ```
+Para se registrar na plataforma.
 
-If you use commercial components, pass the license key as a build secret:
+## Mapa de Endpoints
 
-```bash
-docker build --secret id=proKey,src=$HOME/.vaadin/proKey .
-```
-
-## Next Steps
-
-The [Building Apps](https://vaadin.com/docs/v25/building-apps) guides contain hands-on advice for adding features to 
-your application.
+| Rota / Path | Classe Java | Permissão de Acesso                                    | Funcionalidade Principal                                                                 |
+| :--- | :--- |:-------------------------------------------------------|:-----------------------------------------------------------------------------------------|
+| `/` | `HomeView` | Autenticado         | Redirecionamento baseado no papel (Role) do usuário logado.                              |
+| `/login` | `LoginView` | Público       | Tela de autenticação de usuários.                                                        |
+| `/register` | `RegisterView` | Público | Tela para novos clientes se cadastrarem no sistema.                                      |
+| `/agendamento` | `ClientDashboardView` | Cliente e Admin | Painel do cliente para agendar serviços, visualizar histórico e editar agendamentos.     |
+| `/admin` | `AdminDashboardView` | Apenas Administradores | Painel administrativo com KPIs de faturamento e gerenciamento de todos os agendamentos.  |
