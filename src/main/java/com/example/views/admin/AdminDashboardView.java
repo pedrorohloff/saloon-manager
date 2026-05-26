@@ -4,15 +4,14 @@ import com.example.data.entity.Appointment;
 import com.example.data.entity.AppointmentStatus;
 import com.example.data.entity.ServiceEntity;
 import com.example.data.entity.User;
-import com.example.services.AppointmentService;
 import com.example.services.BusinessDashboardStats;
-import com.example.services.ServiceEntityService;
-import com.example.services.UserService;
+import com.example.views.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -21,9 +20,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.example.views.MainLayout;
 import jakarta.annotation.security.RolesAllowed;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalTime;
 import java.util.HashSet;
@@ -32,10 +30,10 @@ import java.util.Map;
 
 @Route(value = "admin", layout = MainLayout.class)
 @RolesAllowed("ADMIN")
-public class AdminDashboardView extends VerticalLayout {
+public class AdminDashboardView extends VerticalLayout implements AdminDashboardViewInterface {
 
-    private final AppointmentService appointmentService;
-    private final ServiceEntityService serviceEntityService;
+    private final AdminDashboardPresenter presenter;
+    private List<ServiceEntity> allServices;
 
     private final Grid<Appointment> grid;
 
@@ -57,20 +55,16 @@ public class AdminDashboardView extends VerticalLayout {
     private final Span projectionValue;
     private final Grid<Map.Entry<String, Long>> popularServicesGrid;
 
-    public AdminDashboardView(
-            UserService userService,
-            AppointmentService appointmentService,
-            ServiceEntityService serviceEntityService
-    ) {
-        this.appointmentService = appointmentService;
-        this.serviceEntityService = serviceEntityService;
+    @Autowired
+    public AdminDashboardView(AdminDashboardPresenter presenter) {
+        this.presenter = presenter;
+        this.presenter.setView(this);
 
         setPadding(true);
         setSpacing(true);
         setAlignItems(Alignment.CENTER);
 
-        H2 title = new H2("Painel de Controles - Clientes");
-        title.setText("Painel Administrativo - Controle de Agendamentos");
+        H2 title = new H2("Painel Administrativo - Controle de Agendamentos");
 
         dashboardContainer = new HorizontalLayout();
         dashboardContainer.setWidth("80%");
@@ -99,7 +93,7 @@ public class AdminDashboardView extends VerticalLayout {
         projectionCard.getStyle().set("border-radius", "var(--lumo-size-s)");
         projectionCard.getStyle().set("padding", "var(--lumo-space-m)");
         projectionCard.setAlignItems(Alignment.CENTER);
-        Span projTitle = new Span("Projecao Mensal (Base Semanal)");
+        Span projTitle = new Span("Projeção Mensal (Base Semanal)");
         projTitle.getStyle().set("font-size", "var(--lumo-font-size-s)");
         projTitle.getStyle().set("color", "var(--lumo-secondary-text-color)");
         projectionValue = new Span("R$ 0,00");
@@ -116,13 +110,13 @@ public class AdminDashboardView extends VerticalLayout {
         popularServicesCard.getStyle().set("padding", "var(--lumo-space-s)");
         popularServicesCard.setWidth("40%");
 
-        Span servicesTitle = new Span("Servicos da Semana");
+        Span servicesTitle = new Span("Serviços da Semana");
         servicesTitle.getStyle().set("font-weight", "bold");
         servicesTitle.getStyle().set("font-size", "var(--lumo-font-size-s)");
 
         popularServicesGrid = new Grid<>();
         popularServicesGrid.setAllRowsVisible(true);
-        popularServicesGrid.addColumn(Map.Entry::getKey).setHeader("Servico");
+        popularServicesGrid.addColumn(Map.Entry::getKey).setHeader("Serviço");
         popularServicesGrid.addColumn(Map.Entry::getValue).setHeader("Reservas");
         popularServicesGrid.getStyle().set("font-size" , "var(--lumo-font-size-xs)");
 
@@ -140,7 +134,7 @@ public class AdminDashboardView extends VerticalLayout {
         editForm.setSpacing(true);
         editForm.getStyle().set("background-color", "var(--lumo-contrast-5pct)");
         editForm.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
-        editForm.getStyle().set("border-radius", "var(--lumo-size-s");
+        editForm.getStyle().set("border-radius", "var(--lumo-size-s)");
         editForm.setAlignItems(Alignment.CENTER);
         editForm.setWidth("80%");
         editForm.setVisible(false);
@@ -149,9 +143,7 @@ public class AdminDashboardView extends VerticalLayout {
         clientInfoLabel = new Span();
         clientInfoLabel.getStyle().set("font-weight", "bold");
 
-        servicesSelect = new MultiSelectComboBox<>("Servicos");
-        servicesSelect.setItems(serviceEntityService.listAllSerivces());
-        servicesSelect.setItemLabelGenerator(ServiceEntity::getName);
+        servicesSelect = new MultiSelectComboBox<>("Serviços");
         servicesSelect.setWidth("350px");
 
         datePicker = new DatePicker("Data");
@@ -168,10 +160,15 @@ public class AdminDashboardView extends VerticalLayout {
         });
         statusSelect.setWidth("200px");
 
-        saveButton = new Button("Salvar alteracoes", event -> handleSave());
+        saveButton = new Button("Salvar alterações", event -> presenter.onSaveEditClicked(
+                datePicker.getValue(),
+                timePicker.getValue(),
+                servicesSelect.getValue(),
+                statusSelect.getValue()
+        ));
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        cancelButton = new Button("Cancelar", event -> clearSelection());
+        cancelButton = new Button("Cancelar", event -> presenter.onCancelEditClicked());
         cancelButton.addThemeVariants(ButtonVariant.TERTIARY);
 
         HorizontalLayout formActions = new HorizontalLayout(saveButton, cancelButton);
@@ -190,7 +187,7 @@ public class AdminDashboardView extends VerticalLayout {
         grid.addColumn(appointment -> appointment.getClient() != null ? appointment.getClient().getTelephone() : "N/A")
                 .setHeader("Telefone").setAutoWidth(true);
 
-        grid.addColumn(Appointment::getFormattedServiceEntity).setHeader("Servicos").setAutoWidth(true);
+        grid.addColumn(Appointment::getFormattedServiceEntity).setHeader("Serviços").setAutoWidth(true);
 
         grid.addColumn(Appointment::getAppointmentDate).setHeader("Data").setAutoWidth(true);
         grid.addColumn(Appointment::getAppointmentTime).setHeader("Hora").setAutoWidth(true);
@@ -198,51 +195,31 @@ public class AdminDashboardView extends VerticalLayout {
         grid.addColumn(appointment -> "R$ " + String.format("%.2f", appointment.getTotalPrice()))
                 .setHeader("Valor Total").setAutoWidth(true);
 
-        grid.addColumn(appointment -> appointment.isActive() ? "Ativo" : "Cancelado")
-                .setHeader("Status").setAutoWidth(true);
-
         grid.addColumn(Appointment::getStatusDescription).setHeader("Status").setAutoWidth(true);
 
         grid.addComponentColumn(appointment -> {
-            HorizontalLayout actions = new HorizontalLayout();
+                    HorizontalLayout actions = new HorizontalLayout();
 
-            Button editButton = new Button("Editar", event -> selectAppointmentForEdit(appointment));
-            editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-            actions.add(editButton);
+                    Button editBtn = new Button("Editar", event -> presenter.onAppointmentSelectedForEdit(appointment));
+                    editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+                    actions.add(editBtn);
 
-            // directly altering status on grid
-            if (appointment.getStatus() == AppointmentStatus.PENDING) {
-                Button confirmButton = new Button("Confirmar", event ->  {
-                    try {
-                        appointmentService.updateAppointmentStatus(appointment, AppointmentStatus.CONFIRMED);
-                        Notification.show("Agendamento confirmado com sucesso!");
-                        refreshDashboard();
-                    } catch (Exception e) {
-                        Notification.show("Erro ao alterar status: " + e.getMessage());
+                    if (appointment.getStatus() == AppointmentStatus.PENDING) {
+                        Button confirmButton = new Button("Confirmar", event -> presenter.onUpdateStatus(appointment, AppointmentStatus.CONFIRMED));
+                        confirmButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_SUCCESS);
+
+                        Button cancelBtn = new Button("Cancelar", event -> presenter.onUpdateStatus(appointment, AppointmentStatus.CANCELLED));
+                        cancelBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
+
+                        actions.add(confirmButton, cancelBtn);
                     }
-                });
-                confirmButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_SUCCESS);
-                Button cancelButton = new Button("Cancelar", event ->  {
-                    try {
-                        appointmentService.updateAppointmentStatus(appointment, AppointmentStatus.CANCELLED);
-                        Notification.show("Agendamento cancelado com sucesso!");
-                        refreshDashboard();
-                    } catch (Exception e) {
-                        Notification.show("Erro ao alterar status: " + e.getMessage());
-                    }
-                });
-                cancelButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
 
-                actions.add(confirmButton, cancelButton);
-            }
-
-            return actions;
-        })
-                .setHeader("Acoes")
+                    return actions;
+                })
+                .setHeader("Ações")
                 .setWidth("280px")
                 .setFlexGrow(0);
 
-        grid.setItems(appointmentService.listAllAppointments());
         grid.setWidth("90%");
 
         HorizontalLayout tableHeader = new HorizontalLayout();
@@ -250,44 +227,42 @@ public class AdminDashboardView extends VerticalLayout {
         tableHeader.setJustifyContentMode(JustifyContentMode.BETWEEN);
         tableHeader.setAlignItems(Alignment.CENTER);
 
-        Button newAppointmentButton = new Button("Novo Agendamento", event -> openNewAppointmentDialog(userService));
+        Button newAppointmentButton = new Button("Novo Agendamento", event -> openNewAppointmentDialog());
         newAppointmentButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
         tableHeader.add(gridTitle, newAppointmentButton);
 
         add(title, new H3("Painel de Desempenho Semanal"), dashboardContainer, editForm, tableHeader, grid);
-        refreshDashboard();
+
+        // Inicializa o presenter
+        this.presenter.init();
     }
 
-    private void handleSave() {
-        if (editingAppointment == null) {
-            return;
-        }
-        if (datePicker.isEmpty() || timePicker.isEmpty() || datePicker.isEmpty() || statusSelect.isEmpty()) {
-            Notification.show("Todos os campos devem ser preenchidos");
-            return;
-        }
-
-        try {
-            LocalTime selectedTime = LocalTime.parse(timePicker.getValue());
-            appointmentService.updateAppointmentByAdmin(
-                    editingAppointment,
-                    datePicker.getValue(),
-                    selectedTime,
-                    servicesSelect.getValue(),
-                    statusSelect.getValue()
-            );
-
-            Notification.show("Agendamento atualizado com sucesso pelo administrador.");
-            clearSelection();
-            grid.setItems(appointmentService.listAllAppointments());
-        } catch (Exception e) {
-            Notification.show("Erro ao salvar alteracoes: " + e.getMessage());
-        }
-
+    @Override
+    public void setAppointments(List<Appointment> appointments) {
+        grid.setItems(appointments);
     }
 
-    private void selectAppointmentForEdit(Appointment appointment) {
-        editingAppointment = appointment;
+    @Override
+    public void setServices(List<ServiceEntity> services) {
+        this.allServices = services;
+        servicesSelect.setItems(services);
+        servicesSelect.setItemLabelGenerator(ServiceEntity::getName);
+    }
+
+    @Override
+    public void setDashboardKPIs(BusinessDashboardStats stats, List<Map.Entry<String, Long>> popularServices) {
+        revenueValue.setText("R$ " + String.format("%.2f", stats.weeklyRevenue()));
+        projectionValue.setText("R$ " + String.format("%.2f", stats.monthlyProjection()));
+        popularServicesGrid.setItems(popularServices);
+    }
+
+    @Override
+    public void showNotification(String message) {
+        Notification.show(message);
+    }
+
+    @Override
+    public void showEditForm(Appointment appointment) {
         clientInfoLabel.setText("Cliente: " +
                 (appointment.getClient() != null ? appointment.getClient().getName() : "N/A") +
                 " | Telefone: " + (appointment.getClient() != null ? appointment.getClient().getTelephone() : "N/A"));
@@ -300,8 +275,8 @@ public class AdminDashboardView extends VerticalLayout {
         editForm.setVisible(true);
     }
 
-    private void clearSelection() {
-        editingAppointment = null;
+    @Override
+    public void hideEditForm() {
         servicesSelect.clear();
         datePicker.clear();
         timePicker.clear();
@@ -309,17 +284,7 @@ public class AdminDashboardView extends VerticalLayout {
         editForm.setVisible(false);
     }
 
-    private void refreshDashboard() {
-        BusinessDashboardStats stats = appointmentService.getDashboardStats();
-
-        revenueValue.setText("R$ " + String.format("%.2f", stats.weeklyRevenue()));
-        projectionValue.setText("R$ " + String.format("%.2f", stats.monthlyProjection()));
-
-        popularServicesGrid.setItems(stats.serviceCounts().entrySet());
-        grid.setItems(appointmentService.listAllAppointments());
-    }
-
-    private void openNewAppointmentDialog(UserService userService) {
+    private void openNewAppointmentDialog() {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Criar Novo Agendamento (Administrador)");
 
@@ -328,13 +293,13 @@ public class AdminDashboardView extends VerticalLayout {
         dialogLayout.setPadding(false);
 
         ComboBox<User> clientSelect = new ComboBox<>("Selecione o Cliente");
-        clientSelect.setItems(userService.listAllClients());
+        clientSelect.setItems(presenter.getUserService().listAllClients());
         clientSelect.setItemLabelGenerator(User::getName);
         clientSelect.setWidthFull();
         clientSelect.setRequiredIndicatorVisible(true);
 
         MultiSelectComboBox<ServiceEntity> services = new MultiSelectComboBox<>("Selecione os Serviços");
-        services.setItems(serviceEntityService.listAllSerivces());
+        services.setItems(allServices != null ? allServices : List.of());
         services.setItemLabelGenerator(ServiceEntity::getName);
         services.setWidthFull();
         services.setRequiredIndicatorVisible(true);
@@ -351,23 +316,13 @@ public class AdminDashboardView extends VerticalLayout {
         dialogLayout.add(clientSelect, services, date, time);
 
         Button confirmBtn = new Button("Agendar", event -> {
-            if (clientSelect.isEmpty() || services.isEmpty() || date.isEmpty() || time.isEmpty()) {
-                Notification.show("Todos os campos obrigatórios devem ser preenchidos.");
-                return;
-            }
-            try {
-                appointmentService.createAppointment(
-                        clientSelect.getValue(),
-                        date.getValue(),
-                        LocalTime.parse(time.getValue()),
-                        services.getValue()
-                );
-                Notification.show("Agendamento criado com sucesso para o cliente!");
-                dialog.close();
-                refreshDashboard();
-            } catch (Exception e) {
-                Notification.show("Erro ao criar agendamento: " + e.getMessage());
-            }
+            presenter.onCreateNewAppointment(
+                    clientSelect.getValue(),
+                    date.getValue(),
+                    time.getValue(),
+                    services.getValue()
+            );
+            dialog.close();
         });
         confirmBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
 
