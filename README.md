@@ -113,6 +113,14 @@ O projeto é estruturado nos seguintes pacotes:
 * **services**: Contém o estereótipo `@Service` do Spring, classes com regras de negócio, limites de transações, e records (ex: `AppointmentService`).
 * **views**: Contém layouts de interface de usuário e views baseadas no Vaadin Flow, usando o padrão arquitetural MVP (Model-View-Presenter).
 
+## MVP (Model-View-Presenter)
+
+Como podemos ver pela organização do projeto, ele segue o padrão MVP (Model-View-Presenter) nas classes que mais se adequa a sua aplicação.
+<br><br>Podemos ver o exemplo das classes `HomeView.java`, `LoginView.java`, `RegisterView.java`, que possuem uma lógica muito simples, logo, nesse caso, a adoção do MVP estrito faria com que tivéssemos várias classes contendo basicamente apenas boilerplate.
+<br><br>Entretanto, nas classes em que é possível e recomendado a aplicação do MVP, como as presentes dentro de `views/admin/` e `views/client/`, seus princípios foram aplicados, onde realizei a separação do view em três funções: a `ViewInterface`, que possui o contrato a ser seguido na View, 
+o `Presenter`, que age como intermediário entre a `View` e os modelos, mandando os dados recebidos na view para serem processados, e depois os retorna para a view poder mostrá-los, 
+e por fim, a `View`, que apresenta os itens na tela, como o grid de agendamentos, telas de login, cadastro, informações como faturamento, etc., funcionando essencialmente como o frontend da aplicação.
+
 
 ## Como Rodar o Projeto
 
