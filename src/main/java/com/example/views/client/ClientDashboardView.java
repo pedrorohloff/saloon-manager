@@ -177,7 +177,7 @@ public class ClientDashboardView extends VerticalLayout implements ClientDashboa
         dialogLayout.add(new H3("Serviços Contratados: "));
         UnorderedList list = new UnorderedList();
         for (ServiceEntity service : appointment.getServices()) {
-            list.add(new ListItem(service.getName() + " - R$ " + String.format("%.2f", appointment.getTotalPrice())));
+            list.add(new ListItem(service.getName() + " - R$ " + String.format("%.2f", service.getPrice())));
         }
         dialogLayout.add(list);
 
