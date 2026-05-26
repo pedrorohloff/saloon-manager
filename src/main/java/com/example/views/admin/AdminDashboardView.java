@@ -72,8 +72,8 @@ public class AdminDashboardView extends VerticalLayout implements AdminDashboard
 
         // revenue weekly
         VerticalLayout revenueCard = new VerticalLayout();
-        revenueCard.getStyle().set("background-color", "var(--lumo-sucess-color-10pct)");
-        revenueCard.getStyle().set("border", "1px solid var(--lumo-sucess-color-50pct)");
+        revenueCard.getStyle().set("background-color", "var(--lumo-success-color-10pct)");
+        revenueCard.getStyle().set("border", "1px solid var(--lumo-success-color-50pct)");
         revenueCard.getStyle().set("border-radius", "var(--lumo-size-s)");
         revenueCard.getStyle().set("padding", "var(--lumo-space-m)");
         revenueCard.setAlignItems(Alignment.CENTER);
@@ -88,8 +88,8 @@ public class AdminDashboardView extends VerticalLayout implements AdminDashboard
 
         // monthly projection
         VerticalLayout projectionCard = new VerticalLayout();
-        projectionCard.getStyle().set("background-color", "var(--lumo-sucess-color-10pct)");
-        projectionCard.getStyle().set("border", "1px solid var(--lumo-sucess-color-50pct)");
+        projectionCard.getStyle().set("background-color", "var(--lumo-success-color-10pct)");
+        projectionCard.getStyle().set("border", "1px solid var(--lumo-success-color-50pct)");
         projectionCard.getStyle().set("border-radius", "var(--lumo-size-s)");
         projectionCard.getStyle().set("padding", "var(--lumo-space-m)");
         projectionCard.setAlignItems(Alignment.CENTER);
