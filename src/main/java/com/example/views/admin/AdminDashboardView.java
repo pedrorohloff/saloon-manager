@@ -216,29 +216,25 @@ public class AdminDashboardView extends VerticalLayout {
                     try {
                         appointmentService.updateAppointmentStatus(appointment, AppointmentStatus.CONFIRMED);
                         Notification.show("Agendamento confirmado com sucesso!");
-                        grid.setItems(appointmentService.listAllAppointments());
+                        refreshDashboard();
                     } catch (Exception e) {
                         Notification.show("Erro ao alterar status: " + e.getMessage());
                     }
                 });
                 confirmButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_SUCCESS);
-                actions.add(confirmButton);
-            }
-
-            if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
                 Button cancelButton = new Button("Cancelar", event ->  {
                     try {
                         appointmentService.updateAppointmentStatus(appointment, AppointmentStatus.CANCELLED);
                         Notification.show("Agendamento cancelado com sucesso!");
-                        grid.setItems(appointmentService.listAllAppointments());
+                        refreshDashboard();
                     } catch (Exception e) {
                         Notification.show("Erro ao alterar status: " + e.getMessage());
                     }
                 });
                 cancelButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
-                actions.add(cancelButton);
-            }
 
+                actions.add(confirmButton, cancelButton);
+            }
 
             return actions;
         }).setHeader("Acoes").setAutoWidth(true);
