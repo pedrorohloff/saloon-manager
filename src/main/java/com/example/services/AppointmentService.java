@@ -206,7 +206,7 @@ public class AppointmentService {
 
         // filter active appointments on the same week
         List<Appointment> weeklyAppointments = appointmentRepository.findAll().stream()
-                .filter(a -> a.getStatus() != AppointmentStatus.CANCELLED)
+                .filter(a -> a.getStatus() == AppointmentStatus.CONFIRMED)
                 .filter(a -> !a.getAppointmentDate().isBefore(startOfWeek) && !a.getAppointmentDate().isAfter(endOfWeek))
                 .toList();
 
